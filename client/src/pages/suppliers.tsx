@@ -50,7 +50,7 @@ export default function Suppliers() {
       />
 
       <div className="p-6">
-        {suppliers && suppliers.length > 0 ? (
+        {suppliers && Array.isArray(suppliers) && suppliers.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {suppliers.map((supplier: any) => (
               <Card key={supplier.id} className="bg-white shadow-sm border-neutral-200 hover:shadow-md transition-shadow">

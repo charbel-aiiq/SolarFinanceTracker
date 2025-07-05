@@ -62,7 +62,7 @@ export default function Components() {
       />
 
       <div className="p-6">
-        {components && components.length > 0 ? (
+        {components && Array.isArray(components) && components.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {components.map((component: any) => (
               <Card key={component.id} className="bg-white shadow-sm border-neutral-200 hover:shadow-md transition-shadow">

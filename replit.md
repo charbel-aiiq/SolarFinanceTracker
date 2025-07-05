@@ -16,7 +16,7 @@ Solar Finance Pro is a comprehensive financial management system designed for tr
 
 ### Backend Architecture
 - **Framework**: Express.js with TypeScript
-- **Database**: PostgreSQL with Drizzle ORM
+- **Database**: PostgreSQL with Drizzle ORM (DatabaseStorage implementation)
 - **Database Provider**: Neon Database (serverless PostgreSQL)
 - **API Design**: RESTful endpoints with proper HTTP status codes
 - **Validation**: Zod schemas for request/response validation

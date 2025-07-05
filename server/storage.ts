@@ -377,4 +377,233 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+
+export class DatabaseStorage implements IStorage {
+  // Projects
+  async getProjects(): Promise<Project[]> {
+    return await db.select().from(projects);
+  }
+
+  async getProject(id: number): Promise<Project | undefined> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    return project || undefined;
+  }
+
+  async createProject(insertProject: InsertProject): Promise<Project> {
+    const [project] = await db
+      .insert(projects)
+      .values(insertProject)
+      .returning();
+    return project;
+  }
+
+  async updateProject(id: number, projectUpdate: Partial<InsertProject>): Promise<Project | undefined> {
+    const [project] = await db
+      .update(projects)
+      .set(projectUpdate)
+      .where(eq(projects.id, id))
+      .returning();
+    return project || undefined;
+  }
+
+  async deleteProject(id: number): Promise<boolean> {
+    const result = await db.delete(projects).where(eq(projects.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Payments
+  async getPayments(): Promise<Payment[]> {
+    return await db.select().from(payments);
+  }
+
+  async getPaymentsByProject(projectId: number): Promise<Payment[]> {
+    return await db.select().from(payments).where(eq(payments.projectId, projectId));
+  }
+
+  async getPayment(id: number): Promise<Payment | undefined> {
+    const [payment] = await db.select().from(payments).where(eq(payments.id, id));
+    return payment || undefined;
+  }
+
+  async createPayment(insertPayment: InsertPayment): Promise<Payment> {
+    const [payment] = await db
+      .insert(payments)
+      .values(insertPayment)
+      .returning();
+    return payment;
+  }
+
+  async updatePayment(id: number, paymentUpdate: Partial<InsertPayment>): Promise<Payment | undefined> {
+    const [payment] = await db
+      .update(payments)
+      .set(paymentUpdate)
+      .where(eq(payments.id, id))
+      .returning();
+    return payment || undefined;
+  }
+
+  async deletePayment(id: number): Promise<boolean> {
+    const result = await db.delete(payments).where(eq(payments.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Cash Flow Projections
+  async getCashFlowProjections(): Promise<CashFlowProjection[]> {
+    return await db.select().from(cashFlowProjections);
+  }
+
+  async getCashFlowProjectionsByProject(projectId: number): Promise<CashFlowProjection[]> {
+    return await db.select().from(cashFlowProjections).where(eq(cashFlowProjections.projectId, projectId));
+  }
+
+  async createCashFlowProjection(insertProjection: InsertCashFlowProjection): Promise<CashFlowProjection> {
+    const [projection] = await db
+      .insert(cashFlowProjections)
+      .values(insertProjection)
+      .returning();
+    return projection;
+  }
+
+  async updateCashFlowProjection(id: number, projectionUpdate: Partial<InsertCashFlowProjection>): Promise<CashFlowProjection | undefined> {
+    const [projection] = await db
+      .update(cashFlowProjections)
+      .set(projectionUpdate)
+      .where(eq(cashFlowProjections.id, id))
+      .returning();
+    return projection || undefined;
+  }
+
+  // Suppliers
+  async getSuppliers(): Promise<Supplier[]> {
+    return await db.select().from(suppliers);
+  }
+
+  async getSupplier(id: number): Promise<Supplier | undefined> {
+    const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, id));
+    return supplier || undefined;
+  }
+
+  async createSupplier(insertSupplier: InsertSupplier): Promise<Supplier> {
+    const [supplier] = await db
+      .insert(suppliers)
+      .values(insertSupplier)
+      .returning();
+    return supplier;
+  }
+
+  async updateSupplier(id: number, supplierUpdate: Partial<InsertSupplier>): Promise<Supplier | undefined> {
+    const [supplier] = await db
+      .update(suppliers)
+      .set(supplierUpdate)
+      .where(eq(suppliers.id, id))
+      .returning();
+    return supplier || undefined;
+  }
+
+  async deleteSupplier(id: number): Promise<boolean> {
+    const result = await db.delete(suppliers).where(eq(suppliers.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Cost Components
+  async getCostComponents(): Promise<CostComponent[]> {
+    return await db.select().from(costComponents);
+  }
+
+  async getCostComponent(id: number): Promise<CostComponent | undefined> {
+    const [component] = await db.select().from(costComponents).where(eq(costComponents.id, id));
+    return component || undefined;
+  }
+
+  async createCostComponent(insertComponent: InsertCostComponent): Promise<CostComponent> {
+    const [component] = await db
+      .insert(costComponents)
+      .values(insertComponent)
+      .returning();
+    return component;
+  }
+
+  async updateCostComponent(id: number, componentUpdate: Partial<InsertCostComponent>): Promise<CostComponent | undefined> {
+    const [component] = await db
+      .update(costComponents)
+      .set(componentUpdate)
+      .where(eq(costComponents.id, id))
+      .returning();
+    return component || undefined;
+  }
+
+  async deleteCostComponent(id: number): Promise<boolean> {
+    const result = await db.delete(costComponents).where(eq(costComponents.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Supplier Components
+  async getSupplierComponents(): Promise<SupplierComponent[]> {
+    return await db.select().from(supplierComponents);
+  }
+
+  async getSupplierComponentsBySupplier(supplierId: number): Promise<SupplierComponent[]> {
+    return await db.select().from(supplierComponents).where(eq(supplierComponents.supplierId, supplierId));
+  }
+
+  async getSupplierComponentsByComponent(componentId: number): Promise<SupplierComponent[]> {
+    return await db.select().from(supplierComponents).where(eq(supplierComponents.componentId, componentId));
+  }
+
+  async createSupplierComponent(insertSupplierComponent: InsertSupplierComponent): Promise<SupplierComponent> {
+    const [supplierComponent] = await db
+      .insert(supplierComponents)
+      .values(insertSupplierComponent)
+      .returning();
+    return supplierComponent;
+  }
+
+  async updateSupplierComponent(id: number, supplierComponentUpdate: Partial<InsertSupplierComponent>): Promise<SupplierComponent | undefined> {
+    const [supplierComponent] = await db
+      .update(supplierComponents)
+      .set(supplierComponentUpdate)
+      .where(eq(supplierComponents.id, id))
+      .returning();
+    return supplierComponent || undefined;
+  }
+
+  async deleteSupplierComponent(id: number): Promise<boolean> {
+    const result = await db.delete(supplierComponents).where(eq(supplierComponents.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Project Components
+  async getProjectComponents(): Promise<ProjectComponent[]> {
+    return await db.select().from(projectComponents);
+  }
+
+  async getProjectComponentsByProject(projectId: number): Promise<ProjectComponent[]> {
+    return await db.select().from(projectComponents).where(eq(projectComponents.projectId, projectId));
+  }
+
+  async createProjectComponent(insertProjectComponent: InsertProjectComponent): Promise<ProjectComponent> {
+    const [projectComponent] = await db
+      .insert(projectComponents)
+      .values(insertProjectComponent)
+      .returning();
+    return projectComponent;
+  }
+
+  async updateProjectComponent(id: number, projectComponentUpdate: Partial<InsertProjectComponent>): Promise<ProjectComponent | undefined> {
+    const [projectComponent] = await db
+      .update(projectComponents)
+      .set(projectComponentUpdate)
+      .where(eq(projectComponents.id, id))
+      .returning();
+    return projectComponent || undefined;
+  }
+
+  async deleteProjectComponent(id: number): Promise<boolean> {
+    const result = await db.delete(projectComponents).where(eq(projectComponents.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+}
+
+export const storage = new DatabaseStorage();

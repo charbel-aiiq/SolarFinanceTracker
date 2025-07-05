@@ -1,175 +1,216 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { insertCostComponentSchema, type InsertCostComponent } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { insertCostComponentSchema } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2 } from "lucide-react";
+import { Plus } from "lucide-react";
 
 interface ComponentFormProps {
   onSuccess: () => void;
 }
 
 export default function ComponentForm({ onSuccess }: ComponentFormProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const form = useForm({
+  const form = useForm<InsertCostComponent>({
     resolver: zodResolver(insertCostComponentSchema),
     defaultValues: {
       name: "",
       category: "",
       description: "",
       unitType: "",
-      basePrice: "",
-      isActive: true
-    }
+      basePrice: "0",
+    },
   });
 
-  const createComponent = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/cost-components", data);
-      return response.json();
+  const createComponentMutation = useMutation({
+    mutationFn: async (data: InsertCostComponent) => {
+      return await apiRequest({
+        url: "/api/cost-components",
+        method: "POST",
+        body: data,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cost-components"] });
-      toast({
-        title: "Success",
-        description: "Cost component created successfully",
-      });
-      onSuccess();
+      setIsOpen(false);
       form.reset();
+      toast({ title: "Component created successfully" });
+      onSuccess();
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to create component. Please try again.",
+        title: "Error creating component",
+        description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
-  const onSubmit = (data: any) => {
-    createComponent.mutate(data);
-  };
+  function onSubmit(values: InsertCostComponent) {
+    createComponentMutation.mutate(values);
+  }
 
   return (
-    <div>
-      <DialogHeader>
-        <DialogTitle>Add New Cost Component</DialogTitle>
-      </DialogHeader>
-      
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
-        <div>
-          <Label htmlFor="name">Component Name *</Label>
-          <Input
-            id="name"
-            placeholder="e.g., Solar Panel - 300W Monocrystalline"
-            {...form.register("name")}
-          />
-          {form.formState.errors.name && (
-            <p className="text-sm text-red-600 mt-1">{form.formState.errors.name.message}</p>
-          )}
-        </div>
-
-        <div>
-          <Label htmlFor="category">Category *</Label>
-          <Select onValueChange={(value) => form.setValue("category", value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="solar_panels">Solar Panels</SelectItem>
-              <SelectItem value="inverters">Inverters</SelectItem>
-              <SelectItem value="mounting">Mounting Systems</SelectItem>
-              <SelectItem value="electrical">Electrical Components</SelectItem>
-              <SelectItem value="labor">Labor</SelectItem>
-              <SelectItem value="permits">Permits & Fees</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
-          {form.formState.errors.category && (
-            <p className="text-sm text-red-600 mt-1">{form.formState.errors.category.message}</p>
-          )}
-        </div>
-
-        <div>
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            id="description"
-            placeholder="Detailed description of the component"
-            {...form.register("description")}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="unitType">Unit Type *</Label>
-            <Select onValueChange={(value) => form.setValue("unitType", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select unit" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="per_kw">Per kW</SelectItem>
-                <SelectItem value="per_panel">Per Panel</SelectItem>
-                <SelectItem value="per_unit">Per Unit</SelectItem>
-                <SelectItem value="per_hour">Per Hour</SelectItem>
-                <SelectItem value="fixed">Fixed Cost</SelectItem>
-                <SelectItem value="per_sq_ft">Per Square Foot</SelectItem>
-              </SelectContent>
-            </Select>
-            {form.formState.errors.unitType && (
-              <p className="text-sm text-red-600 mt-1">{form.formState.errors.unitType.message}</p>
-            )}
-          </div>
-          
-          <div>
-            <Label htmlFor="basePrice">Base Price ($) *</Label>
-            <Input
-              id="basePrice"
-              type="number"
-              step="0.01"
-              placeholder="250.00"
-              {...form.register("basePrice")}
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Component
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Add Cost Component</DialogTitle>
+          <DialogDescription>
+            Create a new reusable cost component for projects.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., Solar Panel 400W" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {form.formState.errors.basePrice && (
-              <p className="text-sm text-red-600 mt-1">{form.formState.errors.basePrice.message}</p>
-            )}
-          </div>
-        </div>
+            
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="solar_panels">Solar Panels</SelectItem>
+                      <SelectItem value="inverters">Inverters</SelectItem>
+                      <SelectItem value="mounting">Mounting Systems</SelectItem>
+                      <SelectItem value="electrical">Electrical Components</SelectItem>
+                      <SelectItem value="labor">Labor</SelectItem>
+                      <SelectItem value="permits">Permits & Licensing</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <div className="flex justify-end space-x-3 pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onSuccess}
-            disabled={createComponent.isPending}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={createComponent.isPending}
-            className="bg-primary hover:bg-primary/90"
-          >
-            {createComponent.isPending ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              "Create Component"
-            )}
-          </Button>
-        </div>
-      </form>
-    </div>
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Component specifications and details..."
+                      {...field}
+                      value={field.value || ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="basePrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Base Price ($)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="unitType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Unit Type</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., each, kW, hour" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={createComponentMutation.isPending}
+              >
+                {createComponentMutation.isPending ? "Creating..." : "Create Component"}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }
