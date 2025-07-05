@@ -2,12 +2,24 @@ import {
   projects, 
   payments, 
   cashFlowProjections,
+  suppliers,
+  costComponents,
+  supplierComponents,
+  projectComponents,
   type Project, 
   type InsertProject,
   type Payment,
   type InsertPayment,
   type CashFlowProjection,
-  type InsertCashFlowProjection
+  type InsertCashFlowProjection,
+  type Supplier,
+  type InsertSupplier,
+  type CostComponent,
+  type InsertCostComponent,
+  type SupplierComponent,
+  type InsertSupplierComponent,
+  type ProjectComponent,
+  type InsertProjectComponent
 } from "@shared/schema";
 
 export interface IStorage {
@@ -31,23 +43,68 @@ export interface IStorage {
   getCashFlowProjectionsByProject(projectId: number): Promise<CashFlowProjection[]>;
   createCashFlowProjection(projection: InsertCashFlowProjection): Promise<CashFlowProjection>;
   updateCashFlowProjection(id: number, projection: Partial<InsertCashFlowProjection>): Promise<CashFlowProjection | undefined>;
+
+  // Suppliers
+  getSuppliers(): Promise<Supplier[]>;
+  getSupplier(id: number): Promise<Supplier | undefined>;
+  createSupplier(supplier: InsertSupplier): Promise<Supplier>;
+  updateSupplier(id: number, supplier: Partial<InsertSupplier>): Promise<Supplier | undefined>;
+  deleteSupplier(id: number): Promise<boolean>;
+
+  // Cost Components
+  getCostComponents(): Promise<CostComponent[]>;
+  getCostComponent(id: number): Promise<CostComponent | undefined>;
+  createCostComponent(component: InsertCostComponent): Promise<CostComponent>;
+  updateCostComponent(id: number, component: Partial<InsertCostComponent>): Promise<CostComponent | undefined>;
+  deleteCostComponent(id: number): Promise<boolean>;
+
+  // Supplier Components (pricing for specific supplier-component combinations)
+  getSupplierComponents(): Promise<SupplierComponent[]>;
+  getSupplierComponentsBySupplier(supplierId: number): Promise<SupplierComponent[]>;
+  getSupplierComponentsByComponent(componentId: number): Promise<SupplierComponent[]>;
+  createSupplierComponent(supplierComponent: InsertSupplierComponent): Promise<SupplierComponent>;
+  updateSupplierComponent(id: number, supplierComponent: Partial<InsertSupplierComponent>): Promise<SupplierComponent | undefined>;
+  deleteSupplierComponent(id: number): Promise<boolean>;
+
+  // Project Components (actual components used in projects)
+  getProjectComponents(): Promise<ProjectComponent[]>;
+  getProjectComponentsByProject(projectId: number): Promise<ProjectComponent[]>;
+  createProjectComponent(projectComponent: InsertProjectComponent): Promise<ProjectComponent>;
+  updateProjectComponent(id: number, projectComponent: Partial<InsertProjectComponent>): Promise<ProjectComponent | undefined>;
+  deleteProjectComponent(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
   private projects: Map<number, Project>;
   private payments: Map<number, Payment>;
   private cashFlowProjections: Map<number, CashFlowProjection>;
+  private suppliers: Map<number, Supplier>;
+  private costComponents: Map<number, CostComponent>;
+  private supplierComponents: Map<number, SupplierComponent>;
+  private projectComponents: Map<number, ProjectComponent>;
   private currentProjectId: number;
   private currentPaymentId: number;
   private currentCashFlowId: number;
+  private currentSupplierId: number;
+  private currentComponentId: number;
+  private currentSupplierComponentId: number;
+  private currentProjectComponentId: number;
 
   constructor() {
     this.projects = new Map();
     this.payments = new Map();
     this.cashFlowProjections = new Map();
+    this.suppliers = new Map();
+    this.costComponents = new Map();
+    this.supplierComponents = new Map();
+    this.projectComponents = new Map();
     this.currentProjectId = 1;
     this.currentPaymentId = 1;
     this.currentCashFlowId = 1;
+    this.currentSupplierId = 1;
+    this.currentComponentId = 1;
+    this.currentSupplierComponentId = 1;
+    this.currentProjectComponentId = 1;
   }
 
   // Projects
@@ -66,6 +123,8 @@ export class MemStorage implements IStorage {
       id,
       createdAt: new Date(),
       actualIRR: null,
+      expectedIRR: insertProject.expectedIRR || null,
+      status: insertProject.status || "active",
     };
     this.projects.set(id, project);
     return project;
@@ -103,6 +162,8 @@ export class MemStorage implements IStorage {
       ...insertPayment,
       id,
       createdAt: new Date(),
+      isRecurring: insertPayment.isRecurring || null,
+      recurringFrequency: insertPayment.recurringFrequency || null,
     };
     this.payments.set(id, payment);
     return payment;
@@ -135,6 +196,8 @@ export class MemStorage implements IStorage {
     const projection: CashFlowProjection = {
       ...insertProjection,
       id,
+      actualInflow: insertProjection.actualInflow || null,
+      actualOutflow: insertProjection.actualOutflow || null,
     };
     this.cashFlowProjections.set(id, projection);
     return projection;
@@ -147,6 +210,170 @@ export class MemStorage implements IStorage {
     const updatedProjection = { ...projection, ...projectionUpdate };
     this.cashFlowProjections.set(id, updatedProjection);
     return updatedProjection;
+  }
+
+  // Suppliers
+  async getSuppliers(): Promise<Supplier[]> {
+    return Array.from(this.suppliers.values());
+  }
+
+  async getSupplier(id: number): Promise<Supplier | undefined> {
+    return this.suppliers.get(id);
+  }
+
+  async createSupplier(insertSupplier: InsertSupplier): Promise<Supplier> {
+    const id = this.currentSupplierId++;
+    const supplier: Supplier = {
+      ...insertSupplier,
+      id,
+      createdAt: new Date(),
+      contactPerson: insertSupplier.contactPerson || null,
+      email: insertSupplier.email || null,
+      phone: insertSupplier.phone || null,
+      address: insertSupplier.address || null,
+      paymentTerms: insertSupplier.paymentTerms || null,
+      creditRating: insertSupplier.creditRating || null,
+      isActive: insertSupplier.isActive ?? true,
+    };
+    this.suppliers.set(id, supplier);
+    return supplier;
+  }
+
+  async updateSupplier(id: number, supplierUpdate: Partial<InsertSupplier>): Promise<Supplier | undefined> {
+    const supplier = this.suppliers.get(id);
+    if (!supplier) return undefined;
+    
+    const updatedSupplier = { ...supplier, ...supplierUpdate };
+    this.suppliers.set(id, updatedSupplier);
+    return updatedSupplier;
+  }
+
+  async deleteSupplier(id: number): Promise<boolean> {
+    return this.suppliers.delete(id);
+  }
+
+  // Cost Components
+  async getCostComponents(): Promise<CostComponent[]> {
+    return Array.from(this.costComponents.values());
+  }
+
+  async getCostComponent(id: number): Promise<CostComponent | undefined> {
+    return this.costComponents.get(id);
+  }
+
+  async createCostComponent(insertComponent: InsertCostComponent): Promise<CostComponent> {
+    const id = this.currentComponentId++;
+    const component: CostComponent = {
+      id,
+      name: insertComponent.name,
+      category: insertComponent.category,
+      unitType: insertComponent.unitType,
+      basePrice: insertComponent.basePrice,
+      description: insertComponent.description || null,
+      isActive: insertComponent.isActive ?? true,
+      createdAt: new Date(),
+    };
+    this.costComponents.set(id, component);
+    return component;
+  }
+
+  async updateCostComponent(id: number, componentUpdate: Partial<InsertCostComponent>): Promise<CostComponent | undefined> {
+    const component = this.costComponents.get(id);
+    if (!component) return undefined;
+    
+    const updatedComponent = { ...component, ...componentUpdate };
+    this.costComponents.set(id, updatedComponent);
+    return updatedComponent;
+  }
+
+  async deleteCostComponent(id: number): Promise<boolean> {
+    return this.costComponents.delete(id);
+  }
+
+  // Supplier Components
+  async getSupplierComponents(): Promise<SupplierComponent[]> {
+    return Array.from(this.supplierComponents.values());
+  }
+
+  async getSupplierComponentsBySupplier(supplierId: number): Promise<SupplierComponent[]> {
+    return Array.from(this.supplierComponents.values()).filter(sc => sc.supplierId === supplierId);
+  }
+
+  async getSupplierComponentsByComponent(componentId: number): Promise<SupplierComponent[]> {
+    return Array.from(this.supplierComponents.values()).filter(sc => sc.componentId === componentId);
+  }
+
+  async createSupplierComponent(insertSupplierComponent: InsertSupplierComponent): Promise<SupplierComponent> {
+    const id = this.currentSupplierComponentId++;
+    const supplierComponent: SupplierComponent = {
+      id,
+      supplierId: insertSupplierComponent.supplierId,
+      componentId: insertSupplierComponent.componentId,
+      price: insertSupplierComponent.price,
+      leadTime: insertSupplierComponent.leadTime || null,
+      minimumOrder: insertSupplierComponent.minimumOrder || null,
+      paymentTerms: insertSupplierComponent.paymentTerms || null,
+      isPreferred: insertSupplierComponent.isPreferred ?? false,
+      createdAt: new Date(),
+    };
+    this.supplierComponents.set(id, supplierComponent);
+    return supplierComponent;
+  }
+
+  async updateSupplierComponent(id: number, supplierComponentUpdate: Partial<InsertSupplierComponent>): Promise<SupplierComponent | undefined> {
+    const supplierComponent = this.supplierComponents.get(id);
+    if (!supplierComponent) return undefined;
+    
+    const updatedSupplierComponent = { ...supplierComponent, ...supplierComponentUpdate };
+    this.supplierComponents.set(id, updatedSupplierComponent);
+    return updatedSupplierComponent;
+  }
+
+  async deleteSupplierComponent(id: number): Promise<boolean> {
+    return this.supplierComponents.delete(id);
+  }
+
+  // Project Components
+  async getProjectComponents(): Promise<ProjectComponent[]> {
+    return Array.from(this.projectComponents.values());
+  }
+
+  async getProjectComponentsByProject(projectId: number): Promise<ProjectComponent[]> {
+    return Array.from(this.projectComponents.values()).filter(pc => pc.projectId === projectId);
+  }
+
+  async createProjectComponent(insertProjectComponent: InsertProjectComponent): Promise<ProjectComponent> {
+    const id = this.currentProjectComponentId++;
+    const projectComponent: ProjectComponent = {
+      id,
+      projectId: insertProjectComponent.projectId,
+      componentId: insertProjectComponent.componentId,
+      supplierId: insertProjectComponent.supplierId,
+      quantity: insertProjectComponent.quantity,
+      unitPrice: insertProjectComponent.unitPrice,
+      totalCost: insertProjectComponent.totalCost,
+      scheduledDate: insertProjectComponent.scheduledDate || null,
+      actualDate: insertProjectComponent.actualDate || null,
+      status: insertProjectComponent.status || "planned",
+      paymentStatus: insertProjectComponent.paymentStatus || "pending",
+      notes: insertProjectComponent.notes || null,
+      createdAt: new Date(),
+    };
+    this.projectComponents.set(id, projectComponent);
+    return projectComponent;
+  }
+
+  async updateProjectComponent(id: number, projectComponentUpdate: Partial<InsertProjectComponent>): Promise<ProjectComponent | undefined> {
+    const projectComponent = this.projectComponents.get(id);
+    if (!projectComponent) return undefined;
+    
+    const updatedProjectComponent = { ...projectComponent, ...projectComponentUpdate };
+    this.projectComponents.set(id, updatedProjectComponent);
+    return updatedProjectComponent;
+  }
+
+  async deleteProjectComponent(id: number): Promise<boolean> {
+    return this.projectComponents.delete(id);
   }
 }
 

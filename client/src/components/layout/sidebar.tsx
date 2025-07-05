@@ -22,8 +22,9 @@ export default function Sidebar() {
     { href: "/cash-flow", label: "Cash Flow", icon: ChartLine, section: "Financial" },
     { href: "/irr", label: "IRR Calculator", icon: Calculator, section: "Financial" },
     { href: "/reports", label: "P&L Reports", icon: FileText, section: "Financial" },
-    { href: "/payments/client", label: "Client Payments", icon: ArrowUp, section: "Payments" },
-    { href: "/payments/supplier", label: "Supplier Payments", icon: ArrowDown, section: "Payments" },
+    { href: "/payments", label: "All Payments", icon: ArrowUp, section: "Payments" },
+    { href: "/suppliers", label: "Suppliers", icon: User, section: "Components" },
+    { href: "/components", label: "Cost Components", icon: ArrowDown, section: "Components" },
   ];
 
   const sections = Array.from(new Set(navItems.map(item => item.section)));

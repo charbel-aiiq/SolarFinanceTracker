@@ -9,6 +9,8 @@ import Projects from "@/pages/projects";
 import ProjectDetail from "@/pages/project-detail";
 import Payments from "@/pages/payments";
 import Reports from "@/pages/reports";
+import Suppliers from "@/pages/suppliers";
+import Components from "@/pages/components";
 import Layout from "@/components/layout/layout";
 
 function Router() {
@@ -19,6 +21,8 @@ function Router() {
       <Route path="/projects/:id" component={ProjectDetail} />
       <Route path="/payments" component={Payments} />
       <Route path="/reports" component={Reports} />
+      <Route path="/suppliers" component={Suppliers} />
+      <Route path="/components" component={Components} />
       <Route component={NotFound} />
     </Switch>
   );

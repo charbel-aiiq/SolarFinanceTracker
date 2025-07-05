@@ -1,7 +1,15 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertProjectSchema, insertPaymentSchema, insertCashFlowProjectionSchema } from "@shared/schema";
+import { 
+  insertProjectSchema, 
+  insertPaymentSchema, 
+  insertCashFlowProjectionSchema,
+  insertSupplierSchema,
+  insertCostComponentSchema,
+  insertSupplierComponentSchema,
+  insertProjectComponentSchema
+} from "@shared/schema";
 import { calculateIRR, calculatePnL } from "./utils/financial";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -215,6 +223,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  // Supplier routes
+  app.get("/api/suppliers", async (req, res) => {
+    try {
+      const suppliers = await storage.getSuppliers();
+      res.json(suppliers);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch suppliers" });
+    }
+  });
+
+  app.get("/api/suppliers/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const supplier = await storage.getSupplier(id);
+      if (!supplier) {
+        return res.status(404).json({ message: "Supplier not found" });
+      }
+      res.json(supplier);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch supplier" });
+    }
+  });
+
+  app.post("/api/suppliers", async (req, res) => {
+    try {
+      const validatedData = insertSupplierSchema.parse(req.body);
+      const supplier = await storage.createSupplier(validatedData);
+      res.status(201).json(supplier);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid supplier data" });
+    }
+  });
+
+  app.patch("/api/suppliers/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertSupplierSchema.partial().parse(req.body);
+      const supplier = await storage.updateSupplier(id, validatedData);
+      if (!supplier) {
+        return res.status(404).json({ message: "Supplier not found" });
+      }
+      res.json(supplier);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid supplier data" });
+    }
+  });
+
+  app.delete("/api/suppliers/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteSupplier(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Supplier not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete supplier" });
+    }
+  });
+
+  // Cost Component routes
+  app.get("/api/cost-components", async (req, res) => {
+    try {
+      const components = await storage.getCostComponents();
+      res.json(components);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch cost components" });
+    }
+  });
+
+  app.post("/api/cost-components", async (req, res) => {
+    try {
+      const validatedData = insertCostComponentSchema.parse(req.body);
+      const component = await storage.createCostComponent(validatedData);
+      res.status(201).json(component);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid cost component data" });
+    }
+  });
+
+  // Supplier Component routes (pricing for supplier-component combinations)
+  app.get("/api/supplier-components", async (req, res) => {
+    try {
+      const supplierComponents = await storage.getSupplierComponents();
+      res.json(supplierComponents);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch supplier components" });
+    }
+  });
+
+  app.get("/api/suppliers/:id/components", async (req, res) => {
+    try {
+      const supplierId = parseInt(req.params.id);
+      const supplierComponents = await storage.getSupplierComponentsBySupplier(supplierId);
+      res.json(supplierComponents);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch supplier components" });
+    }
+  });
+
+  app.post("/api/supplier-components", async (req, res) => {
+    try {
+      const validatedData = insertSupplierComponentSchema.parse(req.body);
+      const supplierComponent = await storage.createSupplierComponent(validatedData);
+      res.status(201).json(supplierComponent);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid supplier component data" });
+    }
+  });
+
+  // Project Component routes (actual components used in projects)
+  app.get("/api/project-components", async (req, res) => {
+    try {
+      const projectComponents = await storage.getProjectComponents();
+      res.json(projectComponents);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch project components" });
+    }
+  });
+
+  app.get("/api/projects/:id/components", async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const projectComponents = await storage.getProjectComponentsByProject(projectId);
+      res.json(projectComponents);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch project components" });
+    }
+  });
+
+  app.post("/api/project-components", async (req, res) => {
+    try {
+      const validatedData = insertProjectComponentSchema.parse(req.body);
+      const projectComponent = await storage.createProjectComponent(validatedData);
+      res.status(201).json(projectComponent);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid project component data" });
     }
   });
 
